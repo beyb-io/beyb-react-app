@@ -1,5 +1,11 @@
 import { anthropic } from '@ai-sdk/anthropic';
-import { convertToCoreMessages, streamText, tool } from 'ai';
+import {
+  convertToCoreMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+  tool,
+} from 'ai';
 import { z } from 'zod';
 import {
   executeGetWalletBalances,
@@ -40,16 +46,6 @@ When wallet IS connected:
 
 export default defineEventHandler(async (event) => {
   try {
-    // Check if API key is configured
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === 'sk-ant-your-key-here') {
-      return {
-        error: 'API key not configured',
-        message: 'Please set your ANTHROPIC_API_KEY in .env.local file. Get your key from https://console.anthropic.com/',
-        details: 'The AI assistant requires a valid Anthropic API key to function.'
-      };
-    }
-
     const body = await readBody(event);
     const { messages, walletAddress, mockBalances, positions } = body;
 
@@ -58,6 +54,81 @@ export default defineEventHandler(async (event) => {
         statusCode: 400,
         message: 'Invalid request: messages array required'
       });
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const hasApiKey = apiKey && apiKey !== 'sk-ant-your-key-here';
+    if (!hasApiKey) {
+      const balances = Array.isArray(mockBalances) ? mockBalances : [];
+      const positionsList = Array.isArray(positions) ? positions : [];
+      const totalPositionsValue = positionsList.reduce(
+        (sum, position) => sum + Number(position?.currentValue || 0),
+        0
+      );
+      const balancesResult = executeGetWalletBalances(balances);
+      const tokenSymbols = balances.map((balance) => balance?.token?.symbol).filter(Boolean);
+      const strategyResult = executeFindYieldStrategies({
+        tokens: tokenSymbols.length > 0 ? tokenSymbols : undefined,
+      });
+      const suggestedStrategies = [...strategyResult.strategies]
+        .sort((a, b) => b.apy - a.apy)
+        .slice(0, 3);
+
+      const formatUsd = (value: number) =>
+        `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const formatAddress = (address: string) =>
+        address.length > 10 ? `${address.slice(0, 6)}...${address.slice(-4)}` : address;
+
+      let demoText = 'Demo mode: ANTHROPIC_API_KEY is not set, so responses are scripted.';
+
+      if (walletAddress) {
+        demoText += `\n\nWallet: ${formatAddress(walletAddress)}`;
+        demoText += `\nTotal balance: ${formatUsd(balancesResult.totalValueUSD)}`;
+        if (balancesResult.balances.length > 0) {
+          const balanceLines = balancesResult.balances.map((balance) => {
+            const symbol = balance.token?.symbol || 'TOKEN';
+            return `- ${symbol}: ${balance.balance} (~${formatUsd(balance.valueUSD)})`;
+          });
+          demoText += `\n\nBalances:\n${balanceLines.join('\n')}`;
+        } else {
+          demoText += '\n\nBalances: none yet. Connect a wallet to generate mock balances.';
+        }
+
+        if (positionsList.length > 0) {
+          demoText += `\n\nActive positions: ${positionsList.length} (total ${formatUsd(totalPositionsValue)})`;
+        } else {
+          demoText += '\n\nActive positions: none yet.';
+        }
+
+        if (suggestedStrategies.length > 0) {
+          const strategyLines = suggestedStrategies.map(
+            (strategy) =>
+              `- ${strategy.name} (${strategy.protocol}) — ${strategy.apy.toFixed(1)}% APY, ${strategy.riskLevel} risk`
+          );
+          demoText += `\n\nSuggested strategies:\n${strategyLines.join('\n')}`;
+        }
+      } else {
+        demoText +=
+          '\n\nYield farming means putting tokens into protocols to earn rewards. Common strategies include lending, staking, and providing liquidity.';
+        demoText +=
+          '\nConnect a wallet to see personalized mock balances and strategy suggestions.';
+      }
+
+      demoText += '\n\nThis is a demo with simulated transactions. Always consider risks and impermanent loss.';
+
+      const stream = createUIMessageStream({
+        execute({ writer }) {
+          writer.write({ type: 'start' });
+          writer.write({ type: 'start-step' });
+          writer.write({ type: 'text-start', id: 'text-1' });
+          writer.write({ type: 'text-delta', id: 'text-1', delta: demoText });
+          writer.write({ type: 'text-end', id: 'text-1' });
+          writer.write({ type: 'finish-step' });
+          writer.write({ type: 'finish', finishReason: 'stop' });
+        },
+      });
+
+      return createUIMessageStreamResponse({ stream });
     }
 
     // Add wallet context to system prompt
@@ -149,7 +220,7 @@ Provide general information and encourage the user to connect their wallet for p
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('API Error:', error);
     throw createError({
