@@ -399,7 +399,7 @@ export function YieldFarmingThread() {
 
       <div className="border-t border-border bg-black/5 p-4">
         <div className="mx-auto w-full max-w-3xl space-y-4">
-          <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
+          <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <PromptSuggestion
               variant="outline"
               className="shrink-0 bg-white"
