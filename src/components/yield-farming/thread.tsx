@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { IconLoader2, IconSend } from '@tabler/icons-react'
-import type { FormEvent } from 'react'
 import {
   PromptInput,
   PromptInputAction,
@@ -29,6 +28,7 @@ import {
 } from '@/components/yield-farming/messages/transaction-confirm-message'
 import { TextShimmer } from '@/components/prompt-kit/text-shimmer'
 import { ChatConnectButton } from '@/components/yield-farming/chat-connect-button'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 type ChatMessage = {
   id: string
@@ -41,6 +41,7 @@ type ChatMessage = {
     | 'strategy-confirm'
   content?: string
   strategyId?: string
+  title?: string
 }
 
 const THINKING_DELAY_MS = 500
@@ -58,7 +59,21 @@ const createMessageId = () => {
 }
 
 export function YieldFarmingThread() {
-  const [messages, setMessages] = useState<Array<ChatMessage>>([])
+  const [messages, setMessages] = useState<Array<ChatMessage>>(() => [
+    {
+      id: createMessageId(),
+      role: 'assistant',
+      type: 'text',
+      content:
+        'Welcome to BEYB. Explore curated yield strategies, track your wallet balance, and get guided ideas for putting idle assets to work.',
+    },
+    {
+      id: createMessageId(),
+      role: 'assistant',
+      type: 'strategies',
+      title: 'What now we have',
+    },
+  ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [thinkingLabel, setThinkingLabel] = useState<string | null>(null)
@@ -213,8 +228,7 @@ export function YieldFarmingThread() {
     ])
   }
 
-
-  const handleSubmit = (event?: FormEvent<HTMLDivElement>) => {
+  const handleSubmit = (event?: any) => {
     event?.preventDefault()
     void submitMessage()
   }
@@ -224,7 +238,6 @@ export function YieldFarmingThread() {
   }
 
   const isSubmitDisabled = isLoading || input.trim().length === 0
-  const hasMessages = messages.length > 0
 
   useEffect(() => {
     if (connectedAddress !== balanceSnapshotAddress) {
@@ -251,49 +264,26 @@ export function YieldFarmingThread() {
   useEffect(() => {
     if (!endRef.current) return
     requestAnimationFrame(() => {
-      endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      setTimeout(() => {
+        endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }, 50)
     })
-  }, [messages, isLoading])
+  }, [messages, isLoading, balancesLoading, hasBalanceSnapshot])
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto bg-background px-4 pb-6 pt-8">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-          {!hasMessages && (
-            <Message>
-              <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
-              <div className="flex max-w-[80%] flex-col gap-2">
-                <MessageContent>
-                  <StrategiesMessage
-                    strategies={popularStrategies}
-                  />
-                </MessageContent>
-                <div className="flex flex-wrap gap-2">
-                  {popularStrategies.map((strategy) => (
-                    <Button
-                      key={strategy.id}
-                      variant="outline"
-                      disabled={isLoading}
-                      onClick={() => showStrategyDetails(strategy.id)}
-                    >
-                      Details: {strategy.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </Message>
-          )}
-
           {messages.map((message) =>
             message.role === 'user' ? (
               <Message key={message.id} className="justify-end">
-                <MessageContent className="max-w-[80%] bg-primary text-primary-foreground">
+                <MessageContent className="max-w-[80%] bg-primary/15 text-foreground">
                   {message.content ?? ''}
                 </MessageContent>
               </Message>
             ) : message.type === 'balance' ? (
               <Message key={message.id}>
-                <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
+                {/* <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" /> */}
                 <div className="flex max-w-[80%] flex-col gap-2">
                   <MessageContent>
                     <BalanceMessage
@@ -314,11 +304,12 @@ export function YieldFarmingThread() {
               </Message>
             ) : message.type === 'strategies' ? (
               <Message key={message.id}>
-                <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
+                {/* <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" /> */}
                 <div className="flex max-w-[80%] flex-col gap-2">
                   <MessageContent>
                     <StrategiesMessage
                       strategies={popularStrategies}
+                      title={message.title}
                     />
                   </MessageContent>
                   <div className="flex flex-wrap gap-2">
@@ -336,15 +327,13 @@ export function YieldFarmingThread() {
               </Message>
             ) : message.type === 'strategy-detail' ? (
               <Message key={message.id}>
-                <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
+                {/* <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" /> */}
                 <div className="flex max-w-[80%] flex-col gap-2">
                   <MessageContent>
                     {message.strategyId ? (
-                      <StrategyDetailMessage
-                        strategyId={message.strategyId}
-                      />
+                      <StrategyDetailMessage strategyId={message.strategyId} />
                     ) : (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground">
                         Strategy details are unavailable.
                       </div>
                     )}
@@ -365,7 +354,7 @@ export function YieldFarmingThread() {
               </Message>
             ) : message.type === 'strategy-confirm' ? (
               <Message key={message.id}>
-                <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
+                {/* <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" /> */}
                 {message.strategyId ? (
                   <TransactionConfirmProvider
                     strategyId={message.strategyId}
@@ -382,7 +371,7 @@ export function YieldFarmingThread() {
                   </TransactionConfirmProvider>
                 ) : (
                   <MessageContent className="max-w-[80%]">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground">
                       Transaction details are unavailable.
                     </div>
                   </MessageContent>
@@ -390,7 +379,7 @@ export function YieldFarmingThread() {
               </Message>
             ) : (
               <Message key={message.id}>
-                <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
+                {/* <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" /> */}
                 <MessageContent className="max-w-[80%]" markdown>
                   {message.content ?? ''}
                 </MessageContent>
@@ -400,7 +389,7 @@ export function YieldFarmingThread() {
 
           {isLoading && (
             <Message>
-              <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" />
+              {/* <MessageAvatar src="/logo192.png" alt="BEYB" fallback="BY" /> */}
               <MessageContent className="max-w-[80%]">
                 <TextShimmer className="text-sm">
                   {thinkingLabel ?? 'Thinking...'}
@@ -412,8 +401,42 @@ export function YieldFarmingThread() {
         </div>
       </div>
 
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border bg-black/5 p-4">
         <div className="mx-auto w-full max-w-3xl space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <PromptSuggestion
+              variant="outline"
+              className='bg-white'
+              disabled={isLoading}
+              onClick={() => handleSuggestion('Show wallet balance')}
+            >
+              {balanceSuggestionLabel}
+            </PromptSuggestion>
+            <PromptSuggestion
+              variant="outline"
+              className='bg-white'
+              disabled={isLoading}
+              onClick={() => handleSuggestion('Show popular strategies')}
+            >
+              Show popular strategies
+            </PromptSuggestion>
+
+            <ConnectButton.Custom>
+              {({ openConnectModal, mounted }) => {
+                if (!mounted) return null
+                return (
+                  <PromptSuggestion
+                    variant="default"
+                    className='ml-auto'
+                    disabled={isLoading}
+                    onClick={openConnectModal}
+                  >
+                    Connect wallet
+                  </PromptSuggestion>
+                )
+              }}
+            </ConnectButton.Custom>
+          </div>
           <PromptInput
             value={input}
             onValueChange={setInput}
@@ -427,7 +450,7 @@ export function YieldFarmingThread() {
                 <Button
                   size="icon"
                   disabled={isSubmitDisabled}
-                  onClick={handleSubmit}
+                  onClick={(event) => handleSubmit(event)}
                 >
                   {isLoading ? (
                     <IconLoader2 className="h-4 w-4 animate-spin" />
@@ -438,24 +461,6 @@ export function YieldFarmingThread() {
               </PromptInputAction>
             </PromptInputActions>
           </PromptInput>
-          <div className="flex flex-wrap gap-2">
-            <PromptSuggestion
-              variant="outline"
-              size="sm"
-              disabled={isLoading}
-              onClick={() => handleSuggestion('Show wallet balance')}
-            >
-              {balanceSuggestionLabel}
-            </PromptSuggestion>
-            <PromptSuggestion
-              variant="outline"
-              size="sm"
-              disabled={isLoading}
-              onClick={() => handleSuggestion('Show popular strategies')}
-            >
-              Show popular strategies
-            </PromptSuggestion>
-          </div>
         </div>
       </div>
     </div>

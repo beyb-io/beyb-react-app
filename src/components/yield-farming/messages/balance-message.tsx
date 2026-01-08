@@ -22,10 +22,9 @@ export function BalanceMessage({
   address,
   isConnected,
 }: BalanceMessageProps) {
-
   if (!isConnected) {
     return (
-      <div className="space-y-2 text-sm">
+      <div className="space-y-2">
         <div className="whitespace-pre-wrap">
           {'Wallet balance\nConnect a wallet to load live balances.'}
         </div>
@@ -53,7 +52,7 @@ export function BalanceMessage({
         )
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-3">
       <div className="whitespace-pre-wrap">{headerLines.join('\n')}</div>
       <div className="whitespace-pre-wrap">{tokenLines.join('\n')}</div>
     </div>

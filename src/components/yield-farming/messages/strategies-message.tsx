@@ -36,7 +36,7 @@ export function StrategiesMessage({
   ]
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-3">
       <div className="whitespace-pre-wrap">{lines.join('\n')}</div>
     </div>
   )

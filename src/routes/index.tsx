@@ -24,7 +24,7 @@ function YieldFarmingApp() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      <YieldFarmingHeader />
+      {/* <YieldFarmingHeader /> */}
 
       <div className="flex-1 overflow-hidden">
         <YieldFarmingThread />

@@ -48,7 +48,7 @@ export function TransactionConfirmProvider({
   children,
 }: TransactionConfirmProviderProps) {
   const { isConnected } = useAccount()
-  const { sendTransaction, data, isPending, error } = useSendTransaction()
+  const { sendTransaction, isPending, error } = useSendTransaction()
   const strategy = findStrategyById(strategyId)
   const simulatedToken = tokenSymbol ?? strategy?.tokens[0]?.symbol ?? 'TOKEN'
   const simulatedAmount = amount ?? '100'
@@ -85,7 +85,6 @@ export function TransactionConfirmProvider({
     isConnected,
     isPending,
     error: error ?? null,
-    hash: data?.hash,
     disabled,
     handleConfirm,
   }
@@ -111,7 +110,7 @@ export function TransactionConfirmBody() {
   ]
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-3">
       <div className="whitespace-pre-wrap">{details.join('\n')}</div>
       <div className="space-y-1 text-xs font-mono text-muted-foreground">
         <div>To: {context.fakeTo}</div>

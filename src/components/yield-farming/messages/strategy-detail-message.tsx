@@ -19,7 +19,7 @@ export function StrategyDetailMessage({ strategyId }: StrategyDetailMessageProps
 
   if (!strategy) {
     return (
-      <div className="whitespace-pre-wrap text-sm text-muted-foreground">
+      <div className="whitespace-pre-wrap text-muted-foreground">
         {'Strategy not found.\nThis demo strategy is no longer available.'}
       </div>
     )
@@ -43,7 +43,7 @@ export function StrategyDetailMessage({ strategyId }: StrategyDetailMessageProps
   ]
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-3">
       <div className="whitespace-pre-wrap">{lines.join('\n')}</div>
     </div>
   )
