@@ -1,10 +1,14 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import {
   injectedWallet,
+  metaMaskWallet,
+  okxWallet,
+  rabbyWallet,
+  rainbowWallet,
+  trustWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { bsc } from 'wagmi/chains';
-import { http } from 'viem';
 
 // Configure custom RPC for BSC with better rate limits
 const bscWithCustomRpc = {
@@ -33,7 +37,15 @@ export const wagmiConfig = getDefaultConfig({
   wallets: [
     {
       groupName: 'Recommended',
-      wallets: [injectedWallet, walletConnectWallet],
+      wallets: [
+        metaMaskWallet,
+        rainbowWallet,
+        trustWallet,
+        okxWallet,
+        rabbyWallet,
+        walletConnectWallet,
+        injectedWallet,
+      ],
     },
   ],
   chains: [bscWithCustomRpc],
